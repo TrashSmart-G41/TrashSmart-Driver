@@ -1,0 +1,138 @@
+- .expo
+  - devices.json
+  - packager-info.json
+  - README.md
+  - settings.json
+  - types
+    - router.d.ts
+  - web
+    - cache
+      - production
+        - images
+          - favicon
+            - favicon-24272cdaeff82cc5facdaccd982a6f05b60c4504704bbf94c19a6388659880bb-contain-transparent
+              - favicon-48.png
+- .gitignore
+- app
+  - (AuthStack)
+    - Address.js
+    - ConfirmPhone.js
+    - Details.js
+    - GetStarted.js
+    - Notifications.js
+    - ProfilePhoto.js
+    - SignUpPhone.js
+    - Success.js
+    - _laoyut.jsx
+  - (tabs)
+    - history.jsx
+    - home.jsx
+    - notifications.jsx
+    - tasks.jsx
+    - _layout.jsx
+  - CollectionsTopNavigator
+    - Completed.js
+    - New.js
+  - DrawerNavigations
+    - ContactSupportTeam.js
+    - Language.js
+    - PrivacyPolicy.js
+    - RateUs.js
+    - ResetPassword.js
+    - Security.js
+    - TermsOfService.js
+    - Theme.js
+  - index.tsx
+  - NotificationsTopNavigator
+    - All.js
+    - Last07Days.js
+    - Unread.js
+  - Profile
+    - profile.jsx
+    - profileedit.jsx
+  - Profile.js
+  - TabNavigatorScreens
+    - Collections.js
+    - Home.js
+    - Map.js
+    - Notifications.js
+  - Tasks
+    - CollectionMap.jsx
+  - _layout.tsx
+- app.json
+- assets
+  - adaptive-icon.png
+  - favicon.png
+  - fonts
+    - Inter-Black.ttf
+    - SpaceMono-Regular.ttf
+  - icon.png
+  - images
+    - adaptive-icon.png
+    - favicon.png
+    - Home.png
+    - icon.png
+    - logo.png
+    - me.jpg
+    - partial-react-logo.png
+    - react-logo.png
+    - react-logo@2x.png
+    - react-logo@3x.png
+    - splash.png
+    - tasks.png
+  - png
+    - bin_icon_1.png
+    - bin_notifications.png
+    - getStartedBackground.png
+    - logo.png
+    - notifications_img.png
+    - profile_image.png
+    - securityIcon.png
+  - splash.png
+- babel.config.js
+- components
+  - Collapsible.tsx
+  - CustomDrawer.js
+  - DrawerNavigator.js
+  - ExternalLink.tsx
+  - GoBack copy.js
+  - GoBack.js
+  - GoBackHeader.js
+  - Header.js
+  - HelloWave.tsx
+  - History
+    - Stats.jsx
+  - Home
+    - Greetings.jsx
+    - Header.jsx
+    - Insights.jsx
+    - Schedule.jsx
+  - Notifications
+    - Notifications.jsx
+  - ParallaxScrollView.tsx
+  - TabNavigator.js
+  - Tasks
+    - (tabs)
+      - TopBar.jsx
+      - _layout.jsx
+    - Cancelled.jsx
+    - CollectionMap.jsx
+    - InHand.jsx
+    - Rejected.jsx
+    - test.jsx
+  - ThemedText.tsx
+  - ThemedView.tsx
+- constants
+  - Colors.ts
+- expo-env.d.ts
+- hooks
+  - useColorScheme.ts
+  - useColorScheme.web.ts
+  - useThemeColor.ts
+- package-lock.json
+- package.json
+- README.md
+- scripts
+  - reset-project.js
+- tailwind.config.js
+- tsconfig.json
