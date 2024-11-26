@@ -16,7 +16,7 @@ const SignUpEmail = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://192.168.8.50:8081/api/v1/auth/login', {
+      const response = await fetch('http://10.0.2.2:8081/api/v1/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,7 +43,7 @@ const SignUpEmail = () => {
           await AsyncStorage.setItem('userId', decodedToken.userId.toString());
 
           // Fetch user details using the userId and store in UserContext
-          const userDetailsResponse = await fetch(`http://192.168.8.50:8081/api/v1/driver/${decodedToken.userId}`, {
+          const userDetailsResponse = await fetch(`http://10.0.2.2:8081/api/v1/driver/${decodedToken.userId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',

@@ -29,7 +29,7 @@ const ProfileScreen = () => {
         const userId = await AsyncStorage.getItem('userId');
 
         if (token && userId) {
-          const response = await fetch(`http://192.168.8.50:8081/api/v1/driver/${userId}`, {
+          const response = await fetch(`http://10.0.2.2:8081/api/v1/driver/${userId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ const ProfileScreen = () => {
       const userId = await AsyncStorage.getItem('userId');
 
       if (token && userId) {
-        const response = await fetch(`http://192.168.8.50:8081/api/v1/driver/update/${userId}`, {
+        const response = await fetch(`http://10.0.2.2:8081/api/v1/driver/update/${userId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

@@ -14,7 +14,7 @@ const ProfileScreen = () => {
   const handleLogout = async () => {
     try {
       const token = await AsyncStorage.getItem('jwtToken');
-      const response = await fetch('http://192.168.8.50:8081/api/v1/auth/logout', {
+      const response = await fetch('http://10.0.2.2:8081/api/v1/auth/logout', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
