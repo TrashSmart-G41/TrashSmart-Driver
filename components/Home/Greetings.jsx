@@ -7,7 +7,9 @@ import { ThemeContext } from '../../context/ThemeContext';
 export default function Greetings() {
   const { user } = useContext(UserContext); // Access user data from UserContext
   const { theme } = useContext(ThemeContext); // Access theme data from ThemeContext
-  const location = "Reid Avenue, Colombo 7"; // This will be fetched from the database
+  const location = user?.address || "Reid Avenue, Colombo 7"; // Use user address if available, otherwise fallback
+  
+
   const getGreeting = () => {
     const currentHour = new Date().getHours();
     if (currentHour < 12) {
@@ -28,26 +30,30 @@ export default function Greetings() {
     }
   };
 
-  const greetingData = getGreeting(); // Destructure the greeting and icon
-
+  const greetingData = getGreeting();
+  console.log('User Context in Greetings:', user);
   return (
     <View className={`p-7 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
       <View className="flex-row items-center mb-2">
         {greetingData.icon}
-        </View>
-      {/* <View className="flex-row justify-end items-center mb-5">
-        <Fontisto name="world-o" size={24} color={theme === 'dark' ? 'white' : 'black'} className="mr-10" />
-        <FontAwesome name="moon-o" size={28} color={theme === 'dark' ? 'white' : 'black'} className="mr-4" />
-      </View> */}
-      <Text className={`text-lg font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-      {greetingData.greeting}, {user?.firstName || "Guest"}
-      </Text>
-      <View className="flex-row items-center">
+        <Text className={`text-xl font-semibold ml-2 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+          {greetingData.greeting}, {user?.firstName || "Guest"}
+        </Text>
+      </View>
+      <View className="flex-row items-center mb-4">
         <EvilIcons name="location" size={24} color="#32D74B" className="mr-3" />
         <Text className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
           {location}
         </Text>
       </View>
+      <Text className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+        {user?.email || "No email available"}
+      </Text>
+      {user?.phone && (
+        <Text className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+          Contact: {user.phone}
+        </Text>
+      )}
     </View>
   );
 }

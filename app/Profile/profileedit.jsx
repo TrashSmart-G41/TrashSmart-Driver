@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { UserContext } from '../../context/UserContext';
 import { ThemeContext } from '../../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BACKEND_URL from '../../constants/config';
 
 const ProfileScreen = () => {
   const router = useRouter();
@@ -14,7 +15,7 @@ const ProfileScreen = () => {
   const handleLogout = async () => {
     try {
       const token = await AsyncStorage.getItem('jwtToken');
-      const response = await fetch('http://10.0.2.2:8081/api/v1/auth/logout', {
+      const response = await fetch(`${BACKEND_URL}/api/v1/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -56,7 +57,7 @@ const ProfileScreen = () => {
           <Image source={{ uri: user?.profileImage || 'https://via.placeholder.com/100' }} className="w-15 h-15 rounded-full" />
           <View className="flex-1 ml-4">
             <Text className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{user?.firstName || 'Guest'}</Text>
-            <Text className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{user?.userEmail || 'No email'}</Text>
+            <Text className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email || 'No email'}</Text>
           </View>
           <TouchableOpacity onPress={() => router.push('Profile/profile')}>
             <Ionicons name="chevron-forward" size={24} color={theme === 'dark' ? 'gray' : 'black'} />
@@ -64,28 +65,28 @@ const ProfileScreen = () => {
         </View>
 
         <View className={`p-4 rounded-lg mb-5 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'}`}>
-          <TouchableOpacity className="flex-row items-center py-2.5" onPress={() => router.push('/Language')}>
+          {/* <TouchableOpacity className="flex-row items-center py-2.5" onPress={() => router.push('/Language')}>
             <Feather name="globe" size={24} color="#32D74B" />
             <Text className={`flex-1 ml-3 text-base ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Preferable Language</Text>
             <Ionicons name="chevron-forward" size={24} color="gray" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <View className="flex-row items-center py-2.5">
             <Text className={`flex-1 ml-3 text-base ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Dark Mode</Text>
             <Switch value={theme === 'dark'} onValueChange={toggleTheme} />
           </View>
 
-          <TouchableOpacity className="flex-row items-center py-2.5" onPress={() => router.push('/ResetPassword')}>
+          {/* <TouchableOpacity className="flex-row items-center py-2.5" onPress={() => router.push('/ResetPassword')}>
             <MaterialIcons name="lock-reset" size={24} color="#32D74B" />
             <Text className={`flex-1 ml-3 text-base ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Reset Password</Text>
             <Ionicons name="chevron-forward" size={24} color="gray" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-          <TouchableOpacity className="flex-row items-center py-2.5" onPress={() => router.push('/Security')}>
+          {/* <TouchableOpacity className="flex-row items-center py-2.5" onPress={() => router.push('/Security')}>
             <FontAwesome5 name="lock" size={24} color="#32D74B" />
             <Text className={`flex-1 ml-3 text-base ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Security</Text>
             <Ionicons name="chevron-forward" size={24} color="gray" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <View className={`p-4 rounded-lg mb-5 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'}`}>

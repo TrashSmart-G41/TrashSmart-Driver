@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
 import { UserContext } from '../../context/UserContext';
 import { ThemeContext } from '../../context/ThemeContext'; // Import ThemeContext
+import BACKEND_URL from '../../constants/config';
 
 const ProfileScreen = () => {
   const [profileImage, setProfileImage] = useState('https://via.placeholder.com/100');
@@ -29,7 +30,7 @@ const ProfileScreen = () => {
         const userId = await AsyncStorage.getItem('userId');
 
         if (token && userId) {
-          const response = await fetch(`http://10.0.2.2:8081/api/v1/driver/${userId}`, {
+          const response = await fetch(`${BACKEND_URL}/api/v1/driver/${userId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -75,17 +76,132 @@ const ProfileScreen = () => {
     }
   };
 
+  // const handleSaveChanges = async () => {
+  //   if (!firstName || !lastName || !email || !phone || !address || !dob) {
+  //     Alert.alert('Error', 'All fields must be filled in');
+  //     return;
+  //   }
+  //   try {
+  //     const token = await AsyncStorage.getItem('jwtToken');
+  //     const userId = await AsyncStorage.getItem('userId');
+
+  //     if (token && userId) {
+  //       const response = await fetch(`${BACKEND_URL}/api/v1/driver/update/${userId}`, {
+  //         method: 'PUT',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify({
+  //           firstName,
+  //           lastName,
+  //           email,
+  //           contactNo: phone,
+  //           address,
+  //           dob,
+  //         }),
+  //       });
+
+  //       if (response.ok) {
+  //         // Update the user context with the new data
+  //         setUser({
+  //           token,
+  //           userRole: role,
+  //           userEmail: email,
+  //           userId,
+  //           firstName,
+  //           lastName,
+  //           phone,
+  //           address,
+  //           dob,
+  //           profileImage,
+  //         });
+
+  //         Alert.alert('Success', 'Profile updated successfully');
+  //         router.push('/(tabs)/home');
+  //       } else {
+  //         Alert.alert('Error', 'Failed to update profile');
+  //       }
+  //     } else {
+  //       Alert.alert('Error', 'User not logged in');
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to update profile:', error);
+  //     Alert.alert('Error', 'An error occurred while updating profile');
+  //   }
+  // };
+  // const handleSaveChanges = async () => {
+  //   if (!firstName || !lastName || !email || !phone || !address || !dob) {
+  //     Alert.alert('Error', 'All fields must be filled in');
+  //     return;
+  //   }
+  
+  //   try {
+  //     const token = await AsyncStorage.getItem('jwtToken');
+  //     const userId = await AsyncStorage.getItem('userId');
+  
+  //     if (token && userId) {
+  //       const response = await fetch(`${BACKEND_URL}/api/v1/driver/update/${userId}`, {
+  //         method: 'PUT',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify({
+  //           firstName,
+  //           lastName,
+  //           email,
+  //           contactNo: phone,
+  //           address,
+  //           dob,
+  //         }),
+  //       });
+  
+  //       if (response.ok) {
+  //         // Get existing user details from AsyncStorage
+  //         const storedUserDetails = await AsyncStorage.getItem('userDetails');
+  //         const existingDetails = storedUserDetails ? JSON.parse(storedUserDetails) : {};
+  
+  //         // Merge the updated fields with the existing details
+  //         const updatedDetails = {
+  //           ...existingDetails,
+  //           firstName,
+  //           lastName,
+  //           email,
+  //           phone,
+  //           address,
+  //           dob,
+  //           profileImage, // Ensure profileImage updates correctly
+  //         };
+  
+  //         // Update AsyncStorage and UserContext
+  //         await AsyncStorage.setItem('userDetails', JSON.stringify(updatedDetails));
+  //         setUser(updatedDetails);
+  
+  //         Alert.alert('Success', 'Profile updated successfully');
+  //       } else {
+  //         Alert.alert('Error', 'Failed to update profile');
+  //       }
+  //     } else {
+  //       Alert.alert('Error', 'User not logged in');
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to update profile:', error);
+  //     Alert.alert('Error', 'An error occurred while updating profile');
+  //   }
+  // };
   const handleSaveChanges = async () => {
     if (!firstName || !lastName || !email || !phone || !address || !dob) {
       Alert.alert('Error', 'All fields must be filled in');
       return;
     }
+  
     try {
       const token = await AsyncStorage.getItem('jwtToken');
       const userId = await AsyncStorage.getItem('userId');
-
+  
       if (token && userId) {
-        const response = await fetch(`http://10.0.2.2:8081/api/v1/driver/update/${userId}`, {
+        const response = await fetch(`${BACKEND_URL}/api/v1/driver/${userId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -100,24 +216,27 @@ const ProfileScreen = () => {
             dob,
           }),
         });
-
+  
         if (response.ok) {
-          // Update the user context with the new data
-          setUser({
-            token,
-            userRole: role,
-            userEmail: email,
-            userId,
+          const storedUserDetails = await AsyncStorage.getItem('userDetails');
+          const existingDetails = storedUserDetails ? JSON.parse(storedUserDetails) : {};
+  
+          const updatedDetails = {
+            ...existingDetails,
             firstName,
             lastName,
-            phone,
+            email,
+            contactNo: phone,
             address,
             dob,
-            profileImage,
-          });
-
+            profileURL: profileImage, // Ensure profile image is updated
+          };
+  
+          // Save updated details to AsyncStorage and update context
+          await AsyncStorage.setItem('userDetails', JSON.stringify(updatedDetails));
+          setUser(updatedDetails);
+  
           Alert.alert('Success', 'Profile updated successfully');
-          router.push('/(tabs)/home');
         } else {
           Alert.alert('Error', 'Failed to update profile');
         }
@@ -129,6 +248,8 @@ const ProfileScreen = () => {
       Alert.alert('Error', 'An error occurred while updating profile');
     }
   };
+  
+  
 
   return (
     <View className={`flex-1 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>

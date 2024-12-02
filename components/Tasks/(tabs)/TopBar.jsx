@@ -4,6 +4,7 @@ import { createMaterialTopTabNavigator } from '@react-navigation/material-top-ta
 import InHand from '../InHand';
 import Rejected from '../Rejected';
 import Cancelled from '../Cancelled';
+import Completed from '../Completed';
 import { ThemeContext } from '../../../context/ThemeContext'; // Import ThemeContext
 console.log('TopBar.jsx');
 const { width } = Dimensions.get('window');
@@ -29,13 +30,17 @@ export default function TopBar() {
                 title = 'In Hand';
                 count = 2;  // Example count
                 break;
-              case 'Rejected':
-                title = 'Rejected';
-                count = 3;  // Example count
-                break;
-              case 'Cancelled':
-                title = 'Cancelled';
-                count = 1;  // Example count
+              // case 'Rejected':
+              //   title = 'Rejected';
+              //   count = 3;  // Example count
+              //   break;
+              // case 'Cancelled':
+              //   title = 'Cancelled';
+              //   count = 1;  // Example count
+              //   break;
+              case 'Completed': 
+                title = 'Completed';
+                count = 5;  // Example count
                 break;
               default:
                 title = 'Tab';
@@ -46,7 +51,7 @@ export default function TopBar() {
                 className={`text-sm ${focused ? 'font-bold' : 'font-normal'} ${theme === 'dark' ? 'text-white' : 'text-black'}`}
                 style={{ fontSize: width * 0.035 }}
               >
-                {`${title} (${count})`}
+                {`${title}`}
               </Text>
             );
           },
@@ -59,8 +64,10 @@ export default function TopBar() {
         })}
       >
         <Tab.Screen name="In Hand" component={InHand} />
-        <Tab.Screen name="Rejected" component={Rejected} />
-        <Tab.Screen name="Cancelled" component={Cancelled} />
+        <Tab.Screen name="Completed" component={Completed} />
+        {/* <Tab.Screen name="Rejected" component={Rejected} />
+        <Tab.Screen name="Cancelled" component={Cancelled} /> */}
+
       </Tab.Navigator>
     
   );
