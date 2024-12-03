@@ -15,13 +15,13 @@ export default function Header() {
 
   return (
     <SafeAreaView className={` ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-      <View className="flex-row justify-between items-center px-4 pt-9">
+      <View className="flex-row justify-between items-center px-4 pt-12">
         <TouchableOpacity onPress={() => router.push('/Profile/profileedit')}>
           <Feather name="menu" size={24} color={theme === 'dark' ? 'white' : 'black'} />
         </TouchableOpacity>
         <Image source={logoPlaceholder} className="w-40 h-10" resizeMode="contain" />
         <TouchableOpacity onPress={() => router.push('/Profile/profile')}>
-          <Image source={{ uri: user?.profileImage || 'https://via.placeholder.com/100' }} className="w-14 h-14 rounded-full" />
+          <Image source={{ uri: user?.profileURL || 'https://via.placeholder.com/100' }} className="w-14 h-14 rounded-full" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

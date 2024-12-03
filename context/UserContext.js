@@ -15,6 +15,7 @@ export const UserProvider = ({ children }) => {
           const parsedUser = JSON.parse(storedUser);
           console.log('Restored User:', parsedUser); // Debug log
           setUser(parsedUser);
+          console.log('User context updated with:', parsedUser);
         }
       } catch (error) {
         console.error('Error restoring user:', error);

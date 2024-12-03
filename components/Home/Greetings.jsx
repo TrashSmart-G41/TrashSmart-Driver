@@ -7,8 +7,8 @@ import { ThemeContext } from '../../context/ThemeContext';
 export default function Greetings() {
   const { user } = useContext(UserContext); // Access user data from UserContext
   const { theme } = useContext(ThemeContext); // Access theme data from ThemeContext
-  const location = user?.address || "Reid Avenue, Colombo 7"; // Use user address if available, otherwise fallback
-  
+  const location = user?.address || "No Address"; // Use user address if available, otherwise fallback
+  console.log('User Context in Greetings:', user);
 
   const getGreeting = () => {
     const currentHour = new Date().getHours();
