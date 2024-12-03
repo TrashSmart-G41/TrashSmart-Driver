@@ -13,6 +13,7 @@ import Header from '../../components/Header';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BACKEND_URL from '../../constants/config';
+
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY; // Replace with your API key
 
 const decodePolyline = (encoded) => {
@@ -49,27 +50,12 @@ const decodePolyline = (encoded) => {
   return poly;
 };
 
-const simulateTravelBetweenWaypoints = (waypoints, setTravelingPoint) => {
-  let currentIndex = 0;
-
-  const travelInterval = setInterval(() => {
-    if (currentIndex >= waypoints.length) {
-      clearInterval(travelInterval);
-      Alert.alert('Dispatch Completed', 'You have reached your final destination!');
-      return;
-    }
-
-    const nextPoint = waypoints[currentIndex++];
-    setTravelingPoint(nextPoint);
-  }, 1000); // 1 second per waypoint
-};
-
-
 const CollectionMap = () => {
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [travelingPoint, setTravelingPoint] = useState(null);
   const [initialLocation, setInitialLocation] = useState(null);
-  const [simulationCompleted, setSimulationCompleted] = useState(false); // Track simulation status
+  const [simulationCompleted, setSimulationCompleted] = useState(false);
+  const routeFetched = useRef(false); // Prevent redundant API calls
 
   const mapRef = useRef(null);
   const { dispatch } = useLocalSearchParams();
@@ -84,40 +70,41 @@ const CollectionMap = () => {
   }, [parsedDispatch]);
 
   const startLocationUpdates = useCallback(async () => {
-    const { granted } = await Location.requestForegroundPermissionsAsync();
-    if (!granted) {
-      Alert.alert('Permission Denied', 'Location permissions are required for simulation.');
-      return;
-    }
+    try {
+      const { granted } = await Location.requestForegroundPermissionsAsync();
+      if (!granted) {
+        Alert.alert('Permission Denied', 'Location permissions are required for simulation.');
+        return;
+      }
 
-    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    setInitialLocation(location.coords); // Set only once as the starting point
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setInitialLocation(location.coords);
+    } catch (error) {
+      console.error('Error fetching location:', error);
+      Alert.alert('Error', 'Unable to fetch your location.');
+    }
   }, []);
 
   const getDirections = useCallback(async () => {
-    if (simulationCompleted || !initialLocation || sampleLocations.length === 0) return; // Stop if simulation is completed
-
-    if (!API_KEY) {
-      Alert.alert('Error', 'Google Maps API Key is missing.');
-      return;
-    }
-
-    const origin = `${initialLocation.latitude},${initialLocation.longitude}`;
-    const destination = `${sampleLocations[sampleLocations.length - 1].latitude},${sampleLocations[sampleLocations.length - 1].longitude}`;
-    const waypoints = sampleLocations
-      .slice(0, sampleLocations.length - 1)
-      .map((loc) => `${loc.latitude},${loc.longitude}`)
-      .join('|');
+    if (routeFetched.current || !initialLocation || simulationCompleted || sampleLocations.length === 0) return;
 
     try {
+      routeFetched.current = true; // Mark the route as fetched
+      const origin = `${initialLocation.latitude},${initialLocation.longitude}`;
+      const destination = `${sampleLocations[sampleLocations.length - 1].latitude},${sampleLocations[sampleLocations.length - 1].longitude}`;
+      const waypoints = sampleLocations
+        .slice(0, sampleLocations.length - 1)
+        .map((loc) => `${loc.latitude},${loc.longitude}`)
+        .join('|');
+
       const { data } = await axios.get(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&waypoints=${waypoints}&key=${API_KEY}`
       );
-
+      console.log('Directions:', data);
       if (data.routes.length > 0) {
         const steps = decodePolyline(data.routes[0].overview_polyline.points);
         setRouteCoordinates(steps);
-        setTravelingPoint(steps[0]); // Start traveling from the first point
+        setTravelingPoint(steps[0]);
       } else {
         Alert.alert('No Route Found');
       }
@@ -125,13 +112,13 @@ const CollectionMap = () => {
       console.error('Error fetching directions:', error.response?.data || error.message);
     }
   }, [initialLocation, sampleLocations, simulationCompleted]);
+
   const completeDispatch = async (dispatchId) => {
     const token = await AsyncStorage.getItem('jwtToken');
-    console.log('Completing dispatch:', dispatchId);
     try {
-      const response = await axios.post(
+      await axios.post(
         `${BACKEND_URL}/api/v1/organization_dispatch/finish_dispatch/${dispatchId}`,
-        {}, // Provide an empty object as the request body
+        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -144,14 +131,14 @@ const CollectionMap = () => {
       Alert.alert('Error', 'Failed to complete the dispatch.');
     }
   };
-  
 
-  const simulateTravelBetweenWaypoints = (waypoints, setTravelingPoint, dispatchId) => {
+  const simulateTravelBetweenWaypoints = (waypoints, dispatchId) => {
     let currentIndex = 0;
   
     const travelInterval = setInterval(() => {
       if (currentIndex >= waypoints.length) {
         clearInterval(travelInterval);
+        setSimulationCompleted(true); // Mark simulation as completed
         Alert.alert(
           'Dispatch Completed',
           'You have reached your final destination. Do you want to complete this dispatch?',
@@ -169,11 +156,18 @@ const CollectionMap = () => {
         return;
       }
   
-      const nextPoint = waypoints[currentIndex++];
-      setTravelingPoint(nextPoint);
-    }, 1000); // 1 second per waypoint
+      // Directly set the traveling point to the next waypoint
+      setTravelingPoint(waypoints[currentIndex]);
+      mapRef.current?.animateToRegion({
+        latitude: waypoints[currentIndex].latitude,
+        longitude: waypoints[currentIndex].longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      }, 500); // Optional animation duration
+      currentIndex++;
+    }, 1000); // Adjust interval time for speed
   };
-
+  
   useEffect(() => {
     startLocationUpdates();
   }, [startLocationUpdates]);
@@ -183,6 +177,17 @@ const CollectionMap = () => {
       getDirections();
     }
   }, [initialLocation, getDirections]);
+
+  const startSimulation = () => {
+    if (simulationCompleted) {
+      Alert.alert('Simulation already completed.');
+    } else if (sampleLocations.length > 0) {
+      simulateTravelBetweenWaypoints(sampleLocations, parsedDispatch.id);
+    } else {
+      Alert.alert('No waypoints available for simulation.');
+    }
+  };
+  
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -198,8 +203,8 @@ const CollectionMap = () => {
             latitudeDelta: 0.05,
             longitudeDelta: 0.05,
           }}
+          showsUserLocation
         >
-          {/* Render Waypoint Markers */}
           {sampleLocations.map((location, index) => (
             <Marker
               key={index}
@@ -207,35 +212,17 @@ const CollectionMap = () => {
               title={location.title}
             />
           ))}
-
-          {/* Traveling Point Marker */}
           {travelingPoint && (
             <Marker
               coordinate={travelingPoint}
-              pinColor="green" // Traveling point color
+              pinColor="green"
               title="Traveling Point"
             />
           )}
-
-          {/* Route Polyline */}
           {routeCoordinates.length > 0 && (
             <Polyline coordinates={routeCoordinates} strokeWidth={4} strokeColor="blue" />
           )}
-
-          {/* Starting Position */}
-          {initialLocation && (
-            <Marker
-              coordinate={{
-                latitude: initialLocation.latitude,
-                longitude: initialLocation.longitude,
-              }}
-              pinColor="red" // Start point color
-              title="Starting Point"
-            />
-          )}
         </MapView>
-
-        {/* Start Travel Simulation Button */}
         <TouchableOpacity
           style={{
             position: 'absolute',
@@ -247,9 +234,7 @@ const CollectionMap = () => {
             borderRadius: 8,
             alignItems: 'center',
           }}
-          onPress={() =>
-            simulateTravelBetweenWaypoints(sampleLocations, setTravelingPoint, parsedDispatch.id)
-          }
+          onPress={startSimulation}
         >
           <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
             Start Travel Simulation

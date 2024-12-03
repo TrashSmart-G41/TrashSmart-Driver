@@ -4,7 +4,6 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
-  Dimensions,
   Text,
   ScrollView,
   RefreshControl,
@@ -18,19 +17,16 @@ import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../components/Header";
 import { Ionicons } from "@expo/vector-icons";
 import BACKEND_URL from "../../constants/config";
+
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 const decodePolyline = (encoded) => {
   const poly = [];
-  let index = 0,
-    len = encoded.length;
-  let lat = 0,
-    lng = 0;
+  let index = 0, len = encoded.length;
+  let lat = 0, lng = 0;
 
   while (index < len) {
-    let b,
-      shift = 0,
-      result = 0;
+    let b, shift = 0, result = 0;
     do {
       b = encoded.charCodeAt(index++) - 63;
       result |= (b & 0x1f) << shift;
@@ -65,6 +61,7 @@ const HouseholdRouteMap = () => {
   const [travelingPoint, setTravelingPoint] = useState(null);
 
   const mapRef = useRef(null);
+  const routeFetched = useRef(false); // Ref to prevent repeated route fetch
 
   const parseRouteFromUrl = (url) => {
     if (!url) return { destination: null, waypoints: [] };
@@ -109,9 +106,10 @@ const HouseholdRouteMap = () => {
   }, []);
 
   const fetchRoute = useCallback(async () => {
-    if (!currentLocation || !destination) return;
+    if (!currentLocation || !destination || routeFetched.current) return;
 
     try {
+      routeFetched.current = true; // Prevent redundant API calls
       const origin = `${currentLocation.latitude},${currentLocation.longitude}`;
       const dest = `${destination.latitude},${destination.longitude}`;
       const waypointStr = waypoints
@@ -120,6 +118,7 @@ const HouseholdRouteMap = () => {
 
       const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${dest}&waypoints=${waypointStr}&mode=driving&key=${API_KEY}`;
       const { data } = await axios.get(url);
+      console.log("Route Coordinates Data:", data);
 
       if (data.routes.length > 0) {
         const polyline = decodePolyline(data.routes[0].overview_polyline.points);
@@ -138,7 +137,6 @@ const HouseholdRouteMap = () => {
 
   const completeDispatch = async () => {
     const token = await AsyncStorage.getItem("jwtToken");
-    console.log("Completing dispatch:", dispatch.id);
     try {
       await axios.put(
         `${BACKEND_URL}/api/v1/household_dispatch/update_status/${dispatch.id}`,
@@ -147,7 +145,6 @@ const HouseholdRouteMap = () => {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
-
           },
         }
       );
@@ -158,29 +155,45 @@ const HouseholdRouteMap = () => {
     }
   };
 
-  const simulateTravel = () => {
+  
+  const simulateTravelBetweenWaypoints = (waypoints, dispatchId) => {
     let currentIndex = 0;
-
+  
     const travelInterval = setInterval(() => {
       if (currentIndex >= waypoints.length) {
         clearInterval(travelInterval);
-        Alert.alert("Simulation Complete", "You have reached the final destination.", [
-          {
-            text: "Yes, Complete Dispatch",
-            onPress: completeDispatch,
-          },
-          {
-            text: "No",
-            style: "cancel",
-          },
-        ]);
+        //setSimulationCompleted(true); // Mark simulation as completed
+        Alert.alert(
+          'Dispatch Completed',
+          'You have reached your final destination. Do you want to complete this dispatch?',
+          [
+            {
+              text: 'No',
+              style: 'cancel',
+            },
+            {
+              text: 'Yes',
+              onPress: () => completeDispatch(dispatchId),
+            },
+          ]
+        );
         return;
       }
-
-      const nextWaypoint = waypoints[currentIndex++];
-      setTravelingPoint(nextWaypoint);
-    }, 1000); // Move to the next waypoint every second
+  
+      // Directly set the traveling point to the next waypoint
+      setTravelingPoint(waypoints[currentIndex]);
+      mapRef.current?.animateToRegion({
+        latitude: waypoints[currentIndex].latitude,
+        longitude: waypoints[currentIndex].longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      }, 500); // Optional animation duration
+      currentIndex++;
+    }, 1000); // Adjust interval time for speed
   };
+  
+  
+  
 
   useEffect(() => {
     fetchCurrentLocation();
@@ -191,6 +204,12 @@ const HouseholdRouteMap = () => {
       fetchRoute();
     }
   }, [currentLocation, fetchRoute]);
+
+  const refreshRoute = () => {
+    routeFetched.current = false; // Allow re-fetching
+    setLoading(true);
+    fetchRoute();
+  };
 
   if (loading) {
     return (
@@ -205,7 +224,7 @@ const HouseholdRouteMap = () => {
       <Header />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchCurrentLocation} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshRoute} />}
       >
         <View style={{ flex: 1 }}>
           <MapView
@@ -230,29 +249,30 @@ const HouseholdRouteMap = () => {
             {travelingPoint && (
               <Marker
                 coordinate={travelingPoint}
-                pinColor="green" // Traveling point color
+                pinColor="green"
                 title="Traveling Point"
               />
             )}
           </MapView>
         </View>
         <TouchableOpacity
-          style={{
-            position: "absolute",
-            bottom: 30,
-            left: 20,
-            right: 20,
-            padding: 15,
-            backgroundColor: "#46AA62",
-            borderRadius: 8,
-            alignItems: "center",
-          }}
-          onPress={simulateTravel}
-        >
-          <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-            Start Simulation
-          </Text>
-        </TouchableOpacity>
+  style={{
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+    padding: 15,
+    backgroundColor: "#46AA62",
+    borderRadius: 8,
+    alignItems: "center",
+  }}
+  onPress={() => simulateTravelBetweenWaypoints(waypoints, completeDispatch)}
+>
+  <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+    Start Simulation
+  </Text>
+</TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );

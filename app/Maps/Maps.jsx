@@ -6,18 +6,15 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  Dimensions,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import axios from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import SafeArea from '../../components/SafeArea';
 import Header from '../../components/Header';
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-const screenHeight = Dimensions.get('window').height;
 
 const decodePolyline = (encoded) => {
   const poly = [];
@@ -58,6 +55,7 @@ const CollectionMap = () => {
   const [waypoints, setWaypoints] = useState([]);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const routeFetched = useRef(false); // Ref to prevent repeated API calls
 
   const mapRef = useRef(null);
   const { dispatch } = useLocalSearchParams();
@@ -72,30 +70,39 @@ const CollectionMap = () => {
   }, [parsedDispatch]);
 
   const startLocationUpdates = useCallback(async () => {
-    const { granted } = await Location.getForegroundPermissionsAsync();
-    if (!granted) {
-      await Location.requestForegroundPermissionsAsync();
+    try {
+      const { granted } = await Location.requestForegroundPermissionsAsync();
+      if (!granted) {
+        await Location.requestForegroundPermissionsAsync();
+      }
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      setCurrentLocation(location?.coords);
+    } catch (error) {
+      console.error('Error fetching location:', error);
+      Alert.alert('Error', 'Unable to fetch your location.');
     }
-    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    setCurrentLocation(location?.coords);
   }, []);
 
   const getDirections = useCallback(async (current) => {
-    if (!current) return;
+    if (!current || routeFetched.current) return;
 
     if (!API_KEY) {
       Alert.alert('Error', 'Google Maps API Key is missing.');
       return;
     }
 
-    const origin = `${current.latitude},${current.longitude}`;
-    const waypointStr = sampleLocations.map((loc) => `${loc.latitude},${loc.longitude}`).join('|');
-    const destination = `${sampleLocations[sampleLocations.length - 1].latitude},${sampleLocations[sampleLocations.length - 1].longitude}`;
-
     try {
+      routeFetched.current = true; // Prevent redundant calls
+      const origin = `${current.latitude},${current.longitude}`;
+      const waypointStr = sampleLocations.map((loc) => `${loc.latitude},${loc.longitude}`).join('|');
+      const destination = `${sampleLocations[sampleLocations.length - 1].latitude},${sampleLocations[sampleLocations.length - 1].longitude}`;
+
       const { data } = await axios.get(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&waypoints=optimize:true|${waypointStr}&key=${API_KEY}`
       );
+      console.log('Directions API Response:', data);
       if (data.routes.length > 0) {
         const steps = decodePolyline(data.routes[0].overview_polyline.points);
         setRouteCoordinates(steps);
@@ -104,6 +111,7 @@ const CollectionMap = () => {
       }
     } catch (error) {
       console.error('Directions API Error:', error);
+      Alert.alert('Error', 'Failed to fetch route directions.');
     }
   }, [sampleLocations]);
 
@@ -113,43 +121,60 @@ const CollectionMap = () => {
     });
   }, [startLocationUpdates, currentLocation, getDirections]);
 
+  const refreshRoute = () => {
+    routeFetched.current = false; // Allow re-fetching
+    setRefreshing(true);
+    startLocationUpdates().finally(() => setRefreshing(false));
+  };
+
   return (
     <SafeAreaView>
-      <Header/>
+      <Header />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={startLocationUpdates} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshRoute} />}
       >
         <TouchableOpacity
-          className="absolute top-10 left-7 bg-black p-3 rounded-full z-10"
+          style={{
+            position: 'absolute',
+            top: 10,
+            left: 10,
+            backgroundColor: 'black',
+            padding: 10,
+            borderRadius: 50,
+            zIndex: 10,
+          }}
           onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <View className="mt-0 h-screen">
-        <MapView
-  ref={mapRef}
-  provider={PROVIDER_GOOGLE}
-  style={{ flex: 1 }}
-  initialRegion={{
-    latitude: currentLocation?.latitude || sampleLocations[0]?.latitude,
-    longitude: currentLocation?.longitude || sampleLocations[0]?.longitude,
-    latitudeDelta: 0.1,
-    longitudeDelta: 0.1,
-  }}
-  showsUserLocation
->
-  {/* Render Markers */}
-  {(waypoints.length > 0 ? waypoints : sampleLocations).map((waypoint, index) => (
-    <Marker key={index} coordinate={waypoint} />
-  ))}
+        <View className="h-screen">
+          <MapView
+            ref={mapRef}
+            provider={PROVIDER_GOOGLE}
+            style={{ flex: 1 }}
+            initialRegion={{
+              latitude: currentLocation?.latitude || sampleLocations[0]?.latitude,
+              longitude: currentLocation?.longitude || sampleLocations[0]?.longitude,
+              latitudeDelta: 0.1,
+              longitudeDelta: 0.1,
+            }}
+            showsUserLocation
+          >
+            {/* Render Markers */}
+            {(waypoints.length > 0 ? waypoints : sampleLocations).map((waypoint, index) => (
+              <Marker
+                key={index}
+                coordinate={waypoint}
+                title={waypoint.title || `Waypoint ${index + 1}`}
+              />
+            ))}
 
-  {/* Render Polyline */}
-  {routeCoordinates.length > 0 && (
-    <Polyline coordinates={routeCoordinates} strokeWidth={5} strokeColor="blue" />
-  )}
-</MapView>
-
+            {/* Render Polyline */}
+            {routeCoordinates.length > 0 && (
+              <Polyline coordinates={routeCoordinates} strokeWidth={5} strokeColor="blue" />
+            )}
+          </MapView>
         </View>
       </ScrollView>
     </SafeAreaView>
